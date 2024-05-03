@@ -101,11 +101,5 @@
   "files": [
     "dist",
     "src"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/wojtekmaj/react-pdf.git",
-    "directory": "packages/react-pdf"
-  },
-  "funding": "https://github.com/wojtekmaj/react-pdf?sponsor=1"
+  ]
 }
