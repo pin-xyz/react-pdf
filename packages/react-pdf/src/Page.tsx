@@ -6,7 +6,6 @@ import makeEventProps from 'make-event-props';
 import clsx from 'clsx';
 import mergeRefs from 'merge-refs';
 import invariant from 'tiny-invariant';
-import warning from 'warning';
 
 import PageContext from './PageContext.js';
 
@@ -15,7 +14,7 @@ import Canvas from './Page/Canvas.js';
 import TextLayer from './Page/TextLayer.js';
 import AnnotationLayer from './Page/AnnotationLayer.js';
 
-import { cancelRunningTask, isProvided, makePageCallback } from './shared/utils.js';
+import { cancelRunningTask, isProvided, makePageCallback, warning } from './shared/utils.js';
 
 import useDocumentContext from './shared/hooks/useDocumentContext.js';
 import useResolver from './shared/hooks/useResolver.js';
@@ -57,7 +56,7 @@ export type PageProps = {
    */
   canvasBackground?: string;
   /**
-   * A prop that behaves like [ref](https://reactjs.org/docs/refs-and-the-dom.html), but it's passed to `<canvas>` rendered by `<PageCanvas>` component.
+   * A prop that behaves like [ref](https://reactjs.org/docs/refs-and-the-dom.html), but it's passed to `<canvas>` rendered by `<Canvas>` component.
    *
    * @example (ref) => { this.myCanvas = ref; }
    * @example this.ref

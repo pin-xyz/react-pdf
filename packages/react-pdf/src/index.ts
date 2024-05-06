@@ -11,7 +11,7 @@ import usePageContext from './shared/hooks/usePageContext.js';
 
 import PasswordResponses from './PasswordResponses.js';
 
-import PageCanvas from './Page/PageCanvas.js';
+import Canvas from './Page/Canvas.js';
 
 export type { DocumentProps } from './Document.js';
 export type { OutlineProps } from './Outline.js';
@@ -29,7 +29,7 @@ export {
   Document,
   Outline,
   Page,
-  PageCanvas,
+  Canvas as PageCanvas,
   Thumbnail,
   useDocumentContext,
   useOutlineContext,

@@ -1,13 +1,12 @@
 import { useEffect } from 'react';
 import makeCancellable from 'make-cancellable-promise';
 import invariant from 'tiny-invariant';
-import warning from 'warning';
 
 import StructTreeItem from './StructTreeItem.js';
 
 import usePageContext from './shared/hooks/usePageContext.js';
 import useResolver from './shared/hooks/useResolver.js';
-import { cancelRunningTask } from './shared/utils.js';
+import { cancelRunningTask, warning } from './shared/utils.js';
 
 import type { StructTreeNodeWithExtraAttributes } from './shared/types.js';
 
