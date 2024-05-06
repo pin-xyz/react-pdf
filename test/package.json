@@ -10,7 +10,7 @@
     "format": "prettier --check . --cache",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "preview": "vite preview",
-    "test": "yarn lint && yarn tsc && yarn format",
+    "test": "npm run lint && npm run tsc && npm run format",
     "tsc": "tsc"
   },
   "author": {
@@ -21,7 +21,7 @@
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-pdf": "workspace:packages/react-pdf",
+    "react-pdf": "*",
     "tiny-invariant": "^1.0.0"
   },
   "devDependencies": {

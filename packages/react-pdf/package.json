@@ -29,8 +29,8 @@
     "./dist/esm/Page/TextLayer.css": "./dist/esm/Page/TextLayer.css"
   },
   "scripts": {
-    "build": "yarn build-js && yarn copy-styles",
-    "build-js": "yarn build-js-esm && yarn build-js-cjs && yarn build-js-cjs-package",
+    "build": "npm run build-js && npm run copy-styles",
+    "build-js": "npm run build-js-esm && npm run build-js-cjs && npm run build-js-cjs-package",
     "build-js-esm": "tsc --project tsconfig.build.json --outDir dist/esm",
     "build-js-cjs": "tsc --project tsconfig.build.json --outDir dist/cjs --module commonjs --moduleResolution node --verbatimModuleSyntax false",
     "build-js-cjs-package": "echo '{\n  \"type\": \"commonjs\"\n}' > dist/cjs/package.json",
@@ -38,11 +38,11 @@
     "copy-styles": "cpy 'src/**/*.css' dist/esm && cpy 'src/**/*.css' dist/cjs",
     "format": "prettier --check . --cache",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "prepack": "yarn clean && yarn build",
-    "test": "yarn lint && yarn tsc && yarn format && yarn unit",
+    "postinstall": "npm run clean && npm run build",
+    "test": "npm run lint && npm run tsc && npm run format && npm run unit",
     "tsc": "tsc",
     "unit": "vitest",
-    "watch": "yarn build-js-esm --watch & yarn build-js-cjs --watch & nodemon --watch src --ext css --exec \"yarn copy-styles\""
+    "watch": "npm run build-js-esm --watch & npm run build-js-cjs --watch & nodemon --watch src --ext css --exec \"npm run copy-styles\""
   },
   "keywords": [
     "pdf",
