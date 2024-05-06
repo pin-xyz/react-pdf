@@ -4,12 +4,12 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import makeCancellable from 'make-cancellable-promise';
 import clsx from 'clsx';
 import invariant from 'tiny-invariant';
-import warning from 'warning';
+
 import pdfjs from '../pdfjs.js';
 
 import usePageContext from '../shared/hooks/usePageContext.js';
 import useResolver from '../shared/hooks/useResolver.js';
-import { cancelRunningTask } from '../shared/utils.js';
+import { cancelRunningTask, warning } from '../shared/utils.js';
 
 import type { TextContent, TextItem, TextMarkedContent } from 'pdfjs-dist/types/src/display/api.js';
 

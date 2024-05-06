@@ -1,5 +1,4 @@
 import invariant from 'tiny-invariant';
-import warning from 'warning';
 
 import type { PDFPageProxy } from 'pdfjs-dist';
 import type { PageCallback } from './types.js';
@@ -90,6 +89,11 @@ export function getDevicePixelRatio() {
 const allowFileAccessFromFilesTip =
   'On Chromium based browsers, you can use --allow-file-access-from-files flag for debugging purposes.';
 
+export function warning(condition: boolean, message: string) {
+  if (!condition) {
+    console.warn(message);
+  }
+}
 export function displayCORSWarning() {
   warning(
     !isLocalFileSystem,

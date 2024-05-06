@@ -35,7 +35,7 @@
     "build-js-cjs": "tsc --project tsconfig.build.json --outDir dist/cjs --module commonjs --moduleResolution node --verbatimModuleSyntax false",
     "build-js-cjs-package": "echo '{\n  \"type\": \"commonjs\"\n}' > dist/cjs/package.json",
     "clean": "rimraf dist",
-    "copy-styles": "cpy 'src/**/*.css' dist/esm && cpy 'src/**/*.css' dist/cjs",
+    "copy-styles": "cp src/**/*.css dist/esm && cp src/**/*.css dist/cjs",
     "format": "prettier --check . --cache",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "postinstall": "npm run clean && npm run build",
@@ -61,8 +61,7 @@
     "make-event-props": "^1.6.0",
     "merge-refs": "^1.3.0",
     "pdfjs-dist": "3.11.174",
-    "tiny-invariant": "^1.0.0",
-    "warning": "^4.0.0"
+    "tiny-invariant": "^1.0.0"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.0.0",
@@ -70,7 +69,6 @@
     "@testing-library/react": "^15.0.0",
     "@types/node": "*",
     "@types/react": "*",
-    "@types/warning": "^3.0.0",
     "canvas": "^2.11.2",
     "cpy-cli": "^5.0.0",
     "eslint": "^8.56.0",

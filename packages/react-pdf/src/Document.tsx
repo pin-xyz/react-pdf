@@ -5,7 +5,6 @@ import makeEventProps from 'make-event-props';
 import makeCancellable from 'make-cancellable-promise';
 import clsx from 'clsx';
 import invariant from 'tiny-invariant';
-import warning from 'warning';
 import { dequal } from 'dequal';
 import pdfjs from './pdfjs.js';
 
@@ -25,6 +24,7 @@ import {
   isBrowser,
   isDataURI,
   loadFromFile,
+  warning,
 } from './shared/utils.js';
 
 import useResolver from './shared/hooks/useResolver.js';

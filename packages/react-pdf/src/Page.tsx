@@ -6,7 +6,6 @@ import makeEventProps from 'make-event-props';
 import clsx from 'clsx';
 import mergeRefs from 'merge-refs';
 import invariant from 'tiny-invariant';
-import warning from 'warning';
 
 import PageContext from './PageContext.js';
 
@@ -16,7 +15,7 @@ import PageSVG from './Page/PageSVG.js';
 import TextLayer from './Page/TextLayer.js';
 import AnnotationLayer from './Page/AnnotationLayer.js';
 
-import { cancelRunningTask, isProvided, makePageCallback } from './shared/utils.js';
+import { cancelRunningTask, isProvided, makePageCallback, warning } from './shared/utils.js';
 
 import useDocumentContext from './shared/hooks/useDocumentContext.js';
 import useResolver from './shared/hooks/useResolver.js';

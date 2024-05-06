@@ -1,12 +1,17 @@
 import { useEffect, useMemo } from 'react';
 import makeCancellable from 'make-cancellable-promise';
 import invariant from 'tiny-invariant';
-import warning from 'warning';
+
 import pdfjs from '../pdfjs.js';
 
 import usePageContext from '../shared/hooks/usePageContext.js';
 import useResolver from '../shared/hooks/useResolver.js';
-import { cancelRunningTask, isCancelException, makePageCallback } from '../shared/utils.js';
+import {
+  cancelRunningTask,
+  isCancelException,
+  makePageCallback,
+  warning,
+} from '../shared/utils.js';
 
 export default function PageSVG() {
   const pageContext = usePageContext();

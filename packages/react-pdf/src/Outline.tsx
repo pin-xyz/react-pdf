@@ -5,13 +5,12 @@ import makeCancellable from 'make-cancellable-promise';
 import makeEventProps from 'make-event-props';
 import clsx from 'clsx';
 import invariant from 'tiny-invariant';
-import warning from 'warning';
 
 import OutlineContext from './OutlineContext.js';
 
 import OutlineItem from './OutlineItem.js';
 
-import { cancelRunningTask } from './shared/utils.js';
+import { cancelRunningTask, warning } from './shared/utils.js';
 
 import useDocumentContext from './shared/hooks/useDocumentContext.js';
 import useResolver from './shared/hooks/useResolver.js';
