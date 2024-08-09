@@ -16,17 +16,17 @@
       "require": "./dist/cjs/index.js"
     },
     "./dist/Page/AnnotationLayer.css": {
-      "import": "./dist/esm/Page/AnnotationLayer.css",
-      "require": "./dist/cjs/Page/AnnotationLayer.css"
+      "import": "./dist/esm/AnnotationLayer.css",
+      "require": "./dist/cjs/AnnotationLayer.css"
     },
     "./dist/Page/TextLayer.css": {
-      "import": "./dist/esm/Page/TextLayer.css",
-      "require": "./dist/cjs/Page/TextLayer.css"
+      "import": "./dist/esm/TextLayer.css",
+      "require": "./dist/cjs/TextLayer.css"
     },
-    "./dist/cjs/Page/AnnotationLayer.css": "./dist/cjs/Page/AnnotationLayer.css",
-    "./dist/cjs/Page/TextLayer.css": "./dist/cjs/Page/TextLayer.css",
-    "./dist/esm/Page/AnnotationLayer.css": "./dist/esm/Page/AnnotationLayer.css",
-    "./dist/esm/Page/TextLayer.css": "./dist/esm/Page/TextLayer.css"
+    "./dist/cjs/Page/AnnotationLayer.css": "./dist/cjs/AnnotationLayer.css",
+    "./dist/cjs/Page/TextLayer.css": "./dist/cjs/TextLayer.css",
+    "./dist/esm/Page/AnnotationLayer.css": "./dist/esm/AnnotationLayer.css",
+    "./dist/esm/Page/TextLayer.css": "./dist/esm/TextLayer.css"
   },
   "scripts": {
     "build": "npm run build-js && npm run copy-styles",
