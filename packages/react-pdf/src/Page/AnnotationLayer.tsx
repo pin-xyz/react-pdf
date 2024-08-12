@@ -13,6 +13,7 @@ import useResolver from '../shared/hooks/useResolver.js';
 import { cancelRunningTask, warning } from '../shared/utils.js';
 
 import type { Annotations } from '../shared/types.js';
+import { IDownloadManager } from 'pdfjs-dist/types/web/interfaces.js';
 
 export default function AnnotationLayer(): React.ReactElement {
   const documentContext = useDocumentContext();
@@ -167,7 +168,7 @@ export default function AnnotationLayer(): React.ReactElement {
         page,
         viewport: clonedViewport,
       };
-
+      
       const renderParameters = {
         annotations,
         annotationStorage: pdf.annotationStorage,
@@ -177,13 +178,14 @@ export default function AnnotationLayer(): React.ReactElement {
         page,
         renderForms,
         viewport: clonedViewport,
+        downloadManager:  new IDownloadManager(),
       };
-
+      
       layer.innerHTML = '';
-
+      
       try {
         new pdfjs.AnnotationLayer(annotationLayerParameters).render(renderParameters);
-
+      
         // Intentional immediate callback
         onRenderSuccess();
       } catch (error) {
