@@ -11,7 +11,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist';
 const pdfFile = new URL('./sample.pdf', import.meta.url).toString();
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'npm:pdfjs-dist/build/pdf.worker.min.js',
+  'npm:pdfjs-dist/build/pdf.worker.min.mjs',
   import.meta.url,
 ).toString();
 
@@ -45,8 +45,10 @@ export default function Sample() {
   function onFileChange(event: React.ChangeEvent<HTMLInputElement>): void {
     const { files } = event.target;
 
-    if (files && files[0]) {
-      setFile(files[0] || null);
+    const nextFile = files?.[0];
+
+    if (nextFile) {
+      setFile(nextFile);
     }
   }
 

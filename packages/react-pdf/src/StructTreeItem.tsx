@@ -14,9 +14,13 @@ type StructTreeItemProps = {
   node: StructTreeNodeWithExtraAttributes | StructTreeContent;
 };
 
-export default function StructTreeItem({ className, node }: StructTreeItemProps) {
+export default function StructTreeItem({
+  className,
+  node,
+}: StructTreeItemProps): React.ReactElement {
   const attributes = useMemo(() => getAttributes(node), [node]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Looks like a Biome error
   const children = useMemo(() => {
     if (!isStructTreeNode(node)) {
       return null;
@@ -28,7 +32,7 @@ export default function StructTreeItem({ className, node }: StructTreeItemProps)
 
     return node.children.map((child, index) => {
       return (
-        // eslint-disable-next-line react/no-array-index-key
+        // biome-ignore lint/suspicious/noArrayIndexKey: index is stable here
         <StructTreeItem key={index} node={child} />
       );
     });

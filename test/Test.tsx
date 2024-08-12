@@ -20,7 +20,7 @@ import type { ExternalLinkTarget, File, PassMethod, RenderMode } from './shared/
 const { PDFDataRangeTransport } = pdfjs;
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.js',
+  'pdfjs-dist/build/pdf.worker.min.mjs',
   import.meta.url,
 ).toString();
 
@@ -67,8 +67,6 @@ export function readAsDataURL(file: Blob): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
-
-/* eslint-disable no-console */
 
 export default function Test() {
   const [canvasBackground, setCanvasBackground] = useState<string>();
@@ -299,7 +297,11 @@ export default function Test() {
                       key={`page_${index + 1}`}
                       {...pageProps}
                       inputRef={
-                        pageNumber === index + 1 ? (ref) => ref && ref.scrollIntoView() : null
+                        pageNumber === index + 1
+                          ? (ref: HTMLDivElement) => {
+                              ref?.scrollIntoView();
+                            }
+                          : null
                       }
                       pageNumber={index + 1}
                     />

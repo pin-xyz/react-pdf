@@ -48,7 +48,7 @@ export type ThumbnailProps = Omit<
  *
  * Should be placed inside `<Document />`. Alternatively, it can have `pdf` prop passed, which can be obtained from `<Document />`'s `onLoadSuccess` callback function.
  */
-export default function Thumbnail(props: ThumbnailProps) {
+export default function Thumbnail(props: ThumbnailProps): React.ReactElement {
   const documentContext = useDocumentContext();
 
   const mergedProps = { ...documentContext, ...props };
@@ -92,11 +92,9 @@ export default function Thumbnail(props: ThumbnailProps) {
     }
   }
 
-  // eslint-disable-next-line react/prop-types
   const { className: classNameProps, onItemClick: onItemClickProps, ...pageProps } = props;
 
   return (
-    /* eslint-disable-next-line jsx-a11y/anchor-is-valid */
     <a
       className={clsx('react-pdf__Thumbnail', className)}
       href={pageNumber ? '#' : undefined}
