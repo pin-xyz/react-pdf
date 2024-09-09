@@ -1,6 +1,6 @@
 {
   "name": "react-pdf",
-  "version": "8.0.0",
+  "version": "9.1.0",
   "description": "Display PDFs in your React app as easily as if they were images.",
   "type": "module",
   "sideEffects": [
@@ -16,33 +16,34 @@
       "require": "./dist/cjs/index.js"
     },
     "./dist/Page/AnnotationLayer.css": {
-      "import": "./dist/esm/Page/AnnotationLayer.css",
-      "require": "./dist/cjs/Page/AnnotationLayer.css"
+      "import": "./dist/esm/AnnotationLayer.css",
+      "require": "./dist/cjs/AnnotationLayer.css"
     },
     "./dist/Page/TextLayer.css": {
-      "import": "./dist/esm/Page/TextLayer.css",
-      "require": "./dist/cjs/Page/TextLayer.css"
+      "import": "./dist/esm/TextLayer.css",
+      "require": "./dist/cjs/TextLayer.css"
     },
-    "./dist/cjs/Page/AnnotationLayer.css": "./dist/cjs/Page/AnnotationLayer.css",
-    "./dist/cjs/Page/TextLayer.css": "./dist/cjs/Page/TextLayer.css",
-    "./dist/esm/Page/AnnotationLayer.css": "./dist/esm/Page/AnnotationLayer.css",
-    "./dist/esm/Page/TextLayer.css": "./dist/esm/Page/TextLayer.css"
+    "./dist/cjs/Page/AnnotationLayer.css": "./dist/cjs/AnnotationLayer.css",
+    "./dist/cjs/Page/TextLayer.css": "./dist/cjs/TextLayer.css",
+    "./dist/esm/Page/AnnotationLayer.css": "./dist/esm/AnnotationLayer.css",
+    "./dist/esm/Page/TextLayer.css": "./dist/esm/TextLayer.css"
   },
   "scripts": {
-    "build": "yarn build-js && yarn copy-styles",
-    "build-js": "yarn build-js-esm && yarn build-js-cjs && yarn build-js-cjs-package",
+    "build": "npm run build-js && npm run copy-styles",
+    "build-js": "npm run build-js-esm && npm run build-js-cjs && npm run build-js-cjs-package",
     "build-js-esm": "tsc --project tsconfig.build.json --outDir dist/esm",
     "build-js-cjs": "tsc --project tsconfig.build.json --outDir dist/cjs --module commonjs --moduleResolution node --verbatimModuleSyntax false",
     "build-js-cjs-package": "echo '{\n  \"type\": \"commonjs\"\n}' > dist/cjs/package.json",
     "clean": "rimraf dist",
-    "copy-styles": "cpy 'src/**/*.css' dist/esm && cpy 'src/**/*.css' dist/cjs",
-    "format": "prettier --check . --cache",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "copy-styles": "cp src/**/*.css dist/esm && cp src/**/*.css dist/cjs",
+    "format": "biome format",
+    "lint": "biome lint",
+    "postinstall": "npm run clean && npm run build",
+    "test": "npm run lint && npm run tsc && npm run format && npm run unit",
     "prepack": "yarn clean && yarn build",
-    "test": "yarn lint && yarn tsc && yarn format && yarn unit",
     "tsc": "tsc",
     "unit": "vitest",
-    "watch": "yarn build-js-esm --watch & yarn build-js-cjs --watch & nodemon --watch src --ext css --exec \"yarn copy-styles\""
+    "watch": "npm run build-js-esm --watch & npm run build-js-cjs --watch & nodemon --watch src --ext css --exec \"npm run copy-styles\""
   },
   "keywords": [
     "pdf",
@@ -60,28 +61,26 @@
     "make-cancellable-promise": "^1.3.1",
     "make-event-props": "^1.6.0",
     "merge-refs": "^1.3.0",
-    "pdfjs-dist": "3.11.174",
-    "tiny-invariant": "^1.0.0",
-    "warning": "^4.0.0"
+    "pdfjs-dist": "4.4.168",
+    "tiny-invariant": "^1.0.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.8.0",
     "@testing-library/dom": "^10.0.0",
     "@testing-library/jest-dom": "^6.0.0",
-    "@testing-library/react": "^15.0.0",
+    "@testing-library/react": "^16.0.0",
     "@types/node": "*",
     "@types/react": "*",
+    "@types/react-dom": "*",
     "@types/warning": "^3.0.0",
     "canvas": "^2.11.2",
+    "core-js": "^3.37.0",
     "cpy-cli": "^5.0.0",
-    "eslint": "^8.56.0",
-    "eslint-config-wojtekmaj": "^1.0.0",
     "jsdom": "^24.0.0",
-    "nodemon": "^3.0.0",
-    "prettier": "^3.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "rimraf": "^3.0.0",
-    "typescript": "^5.4.2",
+    "typescript": "^5.5.2",
     "vitest": "^1.0.2"
   },
   "peerDependencies": {

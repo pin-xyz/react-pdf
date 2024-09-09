@@ -1,27 +1,27 @@
-import { useEffect } from 'react';
-import makeCancellable from 'make-cancellable-promise';
-import invariant from 'tiny-invariant';
-import warning from 'warning';
+import { useEffect } from "react";
+import makeCancellable from "make-cancellable-promise";
+import invariant from "tiny-invariant";
 
-import StructTreeItem from './StructTreeItem.js';
+import StructTreeItem from "./StructTreeItem.js";
 
-import usePageContext from './shared/hooks/usePageContext.js';
-import useResolver from './shared/hooks/useResolver.js';
-import { cancelRunningTask } from './shared/utils.js';
+import usePageContext from "./shared/hooks/usePageContext.js";
+import useResolver from "./shared/hooks/useResolver.js";
+import { cancelRunningTask, warning } from "./shared/utils.js";
 
-import type { StructTreeNodeWithExtraAttributes } from './shared/types.js';
+import type { StructTreeNodeWithExtraAttributes } from "./shared/types.js";
 
-export default function StructTree() {
+export default function StructTree(): React.ReactElement | null {
   const pageContext = usePageContext();
 
-  invariant(pageContext, 'Unable to find Page context.');
+  invariant(pageContext, "Unable to find Page context.");
 
   const {
     onGetStructTreeError: onGetStructTreeErrorProps,
     onGetStructTreeSuccess: onGetStructTreeSuccessProps,
   } = pageContext;
 
-  const [structTreeState, structTreeDispatch] = useResolver<StructTreeNodeWithExtraAttributes>();
+  const [structTreeState, structTreeDispatch] =
+    useResolver<StructTreeNodeWithExtraAttributes>();
   const { value: structTree, error: structTreeError } = structTreeState;
 
   const { customTextRenderer, page } = pageContext;
@@ -50,59 +50,63 @@ export default function StructTree() {
     }
   }
 
-  function resetAnnotations() {
-    structTreeDispatch({ type: 'RESET' });
-  }
-
-  useEffect(resetAnnotations, [structTreeDispatch, page]);
-
-  function loadStructTree() {
-    if (customTextRenderer) {
-      // TODO: Document why this is necessary
-      return;
-    }
-
-    if (!page) {
-      return;
-    }
-
-    const cancellable = makeCancellable(page.getStructTree());
-    const runningTask = cancellable;
-
-    cancellable.promise
-      .then((nextStructTree) => {
-        structTreeDispatch({ type: 'RESOLVE', value: nextStructTree });
-      })
-      .catch((error) => {
-        structTreeDispatch({ type: 'REJECT', error });
-      });
-
-    return () => cancelRunningTask(runningTask);
-  }
-
-  useEffect(loadStructTree, [customTextRenderer, page, structTreeDispatch]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: useEffect intentionally triggered on page change
+  useEffect(
+    function resetStructTree() {
+      structTreeDispatch({ type: "RESET" });
+    },
+    [structTreeDispatch, page]
+  );
 
   useEffect(
-    () => {
-      if (structTree === undefined) {
+    function loadStructTree() {
+      if (customTextRenderer) {
+        // TODO: Document why this is necessary
         return;
       }
 
-      if (structTree === false) {
-        onLoadError();
+      if (!page) {
         return;
       }
 
-      onLoadSuccess();
+      const cancellable = makeCancellable(page.getStructTree());
+      const runningTask = cancellable;
+
+      cancellable.promise
+        .then((nextStructTree) => {
+          structTreeDispatch({ type: "RESOLVE", value: nextStructTree });
+        })
+        .catch((error) => {
+          structTreeDispatch({ type: "REJECT", error });
+        });
+
+      return () => cancelRunningTask(runningTask);
     },
-    // Ommitted callbacks so they are not called every time they change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [structTree],
+    [customTextRenderer, page, structTreeDispatch]
   );
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Ommitted callbacks so they are not called every time they change
+  useEffect(() => {
+    if (structTree === undefined) {
+      return;
+    }
+
+    if (structTree === false) {
+      onLoadError();
+      return;
+    }
+
+    onLoadSuccess();
+  }, [structTree]);
 
   if (!structTree) {
     return null;
   }
 
-  return <StructTreeItem className="react-pdf__Page__structTree structTree" node={structTree} />;
+  return (
+    <StructTreeItem
+      className="react-pdf__Page__structTree structTree"
+      node={structTree}
+    />
+  );
 }

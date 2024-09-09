@@ -1,20 +1,26 @@
-'use client';
+"use client";
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
-import makeEventProps from 'make-event-props';
-import makeCancellable from 'make-cancellable-promise';
-import clsx from 'clsx';
-import invariant from 'tiny-invariant';
-import warning from 'warning';
-import { dequal } from 'dequal';
-import pdfjs from './pdfjs.js';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+} from "react";
+import makeEventProps from "make-event-props";
+import makeCancellable from "make-cancellable-promise";
+import clsx from "clsx";
+import invariant from "tiny-invariant";
+import { dequal } from "dequal";
+import * as pdfjs from "pdfjs-dist";
 
-import DocumentContext from './DocumentContext.js';
+import DocumentContext from "./DocumentContext.js";
 
-import Message from './Message.js';
+import Message from "./Message.js";
 
-import LinkService from './LinkService.js';
-import PasswordResponses from './PasswordResponses.js';
+import LinkService from "./LinkService.js";
+import PasswordResponses from "./PasswordResponses.js";
 
 import {
   cancelRunningTask,
@@ -25,12 +31,13 @@ import {
   isBrowser,
   isDataURI,
   loadFromFile,
-} from './shared/utils.js';
+  warning,
+} from "./shared/utils.js";
 
-import useResolver from './shared/hooks/useResolver.js';
+import useResolver from "./shared/hooks/useResolver.js";
 
-import type { PDFDocumentProxy } from 'pdfjs-dist';
-import type { EventProps } from 'make-event-props';
+import type { PDFDocumentProxy } from "pdfjs-dist";
+import type { EventProps } from "make-event-props";
 import type {
   ClassName,
   DocumentCallback,
@@ -50,13 +57,16 @@ import type {
   RenderMode,
   ScrollPageIntoViewArgs,
   Source,
-} from './shared/types.js';
+} from "./shared/types.js";
 
 const { PDFDataRangeTransport } = pdfjs;
 
 type OnItemClick = (args: OnItemClickArgs) => void;
 
-type OnPassword = (callback: OnPasswordCallback, reason: PasswordResponse) => void;
+type OnPassword = (
+  callback: OnPasswordCallback,
+  reason: PasswordResponse
+) => void;
 
 type OnSourceError = OnError;
 
@@ -116,7 +126,7 @@ export type DocumentProps = {
    * @example this.ref
    * @example ref
    */
-  inputRef?: React.Ref<HTMLDivElement>;
+  inputRef?: React.Ref<HTMLDivElement | null>;
   /**
    * What the component should display while loading.
    *
@@ -191,9 +201,7 @@ export type DocumentProps = {
    */
   options?: Options;
   /**
-   * Rendering mode of the document. Can be `"canvas"`, `"custom"`, `"none"` or `"svg"`. If set to `"custom"`, `customRenderer` must also be provided.
-   *
-   * **Warning**: SVG render mode is deprecated and will be removed in the future.
+   * Rendering mode of the document. Can be `"canvas"`, `"custom"` or `"none"``. If set to `"custom"`, `customRenderer` must also be provided.
    *
    * @default 'canvas'
    * @example 'custom'
@@ -210,14 +218,12 @@ export type DocumentProps = {
 const defaultOnPassword: OnPassword = (callback, reason) => {
   switch (reason) {
     case PasswordResponses.NEED_PASSWORD: {
-      // eslint-disable-next-line no-alert
-      const password = prompt('Enter the password to open this PDF file.');
+      const password = prompt("Enter the password to open this PDF file.");
       callback(password);
       break;
     }
     case PasswordResponses.INCORRECT_PASSWORD: {
-      // eslint-disable-next-line no-alert
-      const password = prompt('Invalid password. Please try again.');
+      const password = prompt("Invalid password. Please try again.");
       callback(password);
       break;
     }
@@ -227,27 +233,36 @@ const defaultOnPassword: OnPassword = (callback, reason) => {
 
 function isParameterObject(file: File): file is Source {
   return (
-    typeof file === 'object' &&
+    typeof file === "object" &&
     file !== null &&
-    ('data' in file || 'range' in file || 'url' in file)
+    ("data" in file || "range" in file || "url" in file)
   );
 }
 
 /**
  * Loads a document passed using `file` prop.
  */
-const Document = forwardRef(function Document(
+const Document: React.ForwardRefExoticComponent<
+  DocumentProps &
+    React.RefAttributes<{
+      linkService: React.RefObject<LinkService>;
+      pages: React.RefObject<HTMLDivElement[]>;
+      viewer: React.RefObject<{
+        scrollPageIntoView: (args: ScrollPageIntoViewArgs) => void;
+      }>;
+    }>
+> = forwardRef(function Document(
   {
     children,
     className,
-    error = 'Failed to load PDF file.',
+    error = "Failed to load PDF file.",
     externalLinkRel,
     externalLinkTarget,
     file,
     inputRef,
     imageResourcesPath,
-    loading = 'Loading PDF…',
-    noData = 'No PDF file specified.',
+    loading = "Loading PDF…",
+    noData = "No PDF file specified.",
     onItemClick,
     onLoadError: onLoadErrorProps,
     onLoadProgress,
@@ -259,8 +274,8 @@ const Document = forwardRef(function Document(
     renderMode,
     rotate,
     ...otherProps
-  }: DocumentProps,
-  ref,
+  },
+  ref
 ) {
   const [sourceState, sourceDispatch] = useResolver<Source | null>();
   const { value: source, error: sourceError } = sourceState;
@@ -277,7 +292,7 @@ const Document = forwardRef(function Document(
   if (file && file !== prevFile.current && isParameterObject(file)) {
     warning(
       !dequal(file, prevFile.current),
-      `File prop passed to <Document /> changed, but it's equal to previous one. This might result in unnecessary reloads. Consider memoizing the value passed to "file" prop.`,
+      `File prop passed to <Document /> changed, but it's equal to previous one. This might result in unnecessary reloads. Consider memoizing the value passed to "file" prop.`
     );
 
     prevFile.current = file;
@@ -287,7 +302,7 @@ const Document = forwardRef(function Document(
   if (options && options !== prevOptions.current) {
     warning(
       !dequal(options, prevOptions.current),
-      `Options prop passed to <Document /> changed, but it's equal to previous one. This might result in unnecessary reloads. Consider memoizing the value passed to "options" prop.`,
+      `Options prop passed to <Document /> changed, but it's equal to previous one. This might result in unnecessary reloads. Consider memoizing the value passed to "options" prop.`
     );
 
     prevOptions.current = options;
@@ -315,7 +330,7 @@ const Document = forwardRef(function Document(
 
       warning(
         false,
-        `An internal link leading to page ${pageNumber} was clicked, but neither <Document> was provided with onItemClick nor it was able to find the page within itself. Either provide onItemClick to <Document> and handle navigating by yourself or ensure that all pages are rendered within <Document>.`,
+        `An internal link leading to page ${pageNumber} was clicked, but neither <Document> was provided with onItemClick nor it was able to find the page within itself. Either provide onItemClick to <Document> and handle navigating by yourself or ensure that all pages are rendered within <Document>.`
       );
     },
   });
@@ -327,7 +342,7 @@ const Document = forwardRef(function Document(
       pages,
       viewer,
     }),
-    [],
+    []
   );
 
   /**
@@ -356,9 +371,10 @@ const Document = forwardRef(function Document(
   }
 
   function resetSource() {
-    sourceDispatch({ type: 'RESET' });
+    sourceDispatch({ type: "RESET" });
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: See https://github.com/biomejs/biome/issues/3080
   useEffect(resetSource, [file, sourceDispatch]);
 
   const findDocumentSource = useCallback(async (): Promise<Source | null> => {
@@ -367,7 +383,7 @@ const Document = forwardRef(function Document(
     }
 
     // File is a string
-    if (typeof file === 'string') {
+    if (typeof file === "string") {
       if (isDataURI(file)) {
         const fileByteString = dataURItoByteString(file);
         return { data: fileByteString };
@@ -402,17 +418,17 @@ const Document = forwardRef(function Document(
 
     // At this point, file must be an object
     invariant(
-      typeof file === 'object',
-      'Invalid parameter in file, need either Uint8Array, string or a parameter object',
+      typeof file === "object",
+      "Invalid parameter in file, need either Uint8Array, string or a parameter object"
     );
 
     invariant(
       isParameterObject(file),
-      'Invalid parameter object: need either .data, .range or .url',
+      "Invalid parameter object: need either .data, .range or .url"
     );
 
     // File .url is a string
-    if ('url' in file && typeof file.url === 'string') {
+    if ("url" in file && typeof file.url === "string") {
       if (isDataURI(file.url)) {
         const { url, ...otherParams } = file;
         const fileByteString = dataURItoByteString(url);
@@ -430,10 +446,10 @@ const Document = forwardRef(function Document(
 
     cancellable.promise
       .then((nextSource) => {
-        sourceDispatch({ type: 'RESOLVE', value: nextSource });
+        sourceDispatch({ type: "RESOLVE", value: nextSource });
       })
       .catch((error) => {
-        sourceDispatch({ type: 'REJECT', error });
+        sourceDispatch({ type: "REJECT", error });
       });
 
     return () => {
@@ -441,23 +457,19 @@ const Document = forwardRef(function Document(
     };
   }, [findDocumentSource, sourceDispatch]);
 
-  useEffect(
-    () => {
-      if (typeof source === 'undefined') {
-        return;
-      }
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Ommitted callbacks so they are not called every time they change
+  useEffect(() => {
+    if (typeof source === "undefined") {
+      return;
+    }
 
-      if (source === false) {
-        onSourceError();
-        return;
-      }
+    if (source === false) {
+      onSourceError();
+      return;
+    }
 
-      onSourceSuccess();
-    },
-    // Ommitted callbacks so they are not called every time they change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [source],
-  );
+    onSourceSuccess();
+  }, [source]);
 
   /**
    * Called when a document is read successfully
@@ -492,90 +504,84 @@ const Document = forwardRef(function Document(
     }
   }
 
-  function resetDocument() {
-    pdfDispatch({ type: 'RESET' });
-  }
+  // biome-ignore lint/correctness/useExhaustiveDependencies: useEffect intentionally triggered on source change
+  useEffect(
+    function resetDocument() {
+      pdfDispatch({ type: "RESET" });
+    },
+    [pdfDispatch, source]
+  );
 
-  useEffect(resetDocument, [pdfDispatch, source]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Ommitted callbacks so they are not called every time they change
+  useEffect(
+    function loadDocument() {
+      if (!source) {
+        return;
+      }
 
-  function loadDocument() {
-    if (!source) {
+      const documentInitParams: Source = {
+        ...source,
+        ...options,
+      };
+
+      const destroyable = pdfjs.getDocument(documentInitParams);
+      if (onLoadProgress) {
+        destroyable.onProgress = onLoadProgress;
+      }
+      if (onPassword) {
+        destroyable.onPassword = onPassword;
+      }
+      const loadingTask = destroyable;
+
+      loadingTask.promise
+        .then((nextPdf) => {
+          pdfDispatch({ type: "RESOLVE", value: nextPdf });
+        })
+        .catch((error) => {
+          if (loadingTask.destroyed) {
+            return;
+          }
+
+          pdfDispatch({ type: "REJECT", error });
+        });
+
+      return () => {
+        loadingTask.destroy();
+      };
+    },
+    [options, pdfDispatch, source]
+  );
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Ommitted callbacks so they are not called every time they change
+  useEffect(() => {
+    if (typeof pdf === "undefined") {
       return;
     }
 
-    const documentInitParams = options
-      ? {
-          ...source,
-          ...options,
-        }
-      : source;
-
-    const destroyable = pdfjs.getDocument(documentInitParams);
-    if (onLoadProgress) {
-      destroyable.onProgress = onLoadProgress;
+    if (pdf === false) {
+      onLoadError();
+      return;
     }
-    if (onPassword) {
-      destroyable.onPassword = onPassword;
-    }
-    const loadingTask = destroyable;
 
-    loadingTask.promise
-      .then((nextPdf) => {
-        pdfDispatch({ type: 'RESOLVE', value: nextPdf });
-      })
-      .catch((error) => {
-        if (loadingTask.destroyed) {
-          return;
-        }
-
-        pdfDispatch({ type: 'REJECT', error });
-      });
-
-    return () => {
-      loadingTask.destroy();
-    };
-  }
+    onLoadSuccess();
+  }, [pdf]);
 
   useEffect(
-    loadDocument,
-    // Ommitted callbacks so they are not called every time they change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [options, pdfDispatch, source],
-  );
-
-  useEffect(
-    () => {
-      if (typeof pdf === 'undefined') {
-        return;
-      }
-
-      if (pdf === false) {
-        onLoadError();
-        return;
-      }
-
-      onLoadSuccess();
+    function setupLinkService() {
+      linkService.current.setViewer(viewer.current);
+      linkService.current.setExternalLinkRel(externalLinkRel);
+      linkService.current.setExternalLinkTarget(externalLinkTarget);
     },
-    // Ommitted callbacks so they are not called every time they change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pdf],
+    [externalLinkRel, externalLinkTarget]
   );
 
-  function setupLinkService() {
-    linkService.current.setViewer(viewer.current);
-    linkService.current.setExternalLinkRel(externalLinkRel);
-    linkService.current.setExternalLinkTarget(externalLinkTarget);
-  }
-
-  useEffect(setupLinkService, [externalLinkRel, externalLinkTarget]);
-
-  function registerPage(pageIndex: number, ref: HTMLDivElement) {
+  const registerPage = useCallback((pageIndex: number, ref: HTMLDivElement) => {
     pages.current[pageIndex] = ref;
-  }
+  }, []);
 
-  function unregisterPage(pageIndex: number) {
+  const unregisterPage = useCallback((pageIndex: number) => {
     delete pages.current[pageIndex];
-  }
+  }, []);
 
   const childContext = useMemo(
     () => ({
@@ -588,28 +594,54 @@ const Document = forwardRef(function Document(
       rotate,
       unregisterPage,
     }),
-    [imageResourcesPath, onItemClick, pdf, renderMode, rotate],
+    [
+      imageResourcesPath,
+      onItemClick,
+      pdf,
+      registerPage,
+      renderMode,
+      rotate,
+      unregisterPage,
+    ]
   );
 
-  const eventProps = useMemo(() => makeEventProps(otherProps, () => pdf), [otherProps, pdf]);
+  const eventProps = useMemo(
+    () => makeEventProps(otherProps, () => pdf),
+    // biome-ignore lint/correctness/useExhaustiveDependencies: FIXME
+    [otherProps, pdf]
+  );
 
   function renderChildren() {
-    return <DocumentContext.Provider value={childContext}>{children}</DocumentContext.Provider>;
+    return (
+      <DocumentContext.Provider value={childContext}>
+        {children}
+      </DocumentContext.Provider>
+    );
   }
 
   function renderContent() {
     if (!file) {
-      return <Message type="no-data">{typeof noData === 'function' ? noData() : noData}</Message>;
+      return (
+        <Message type="no-data">
+          {typeof noData === "function" ? noData() : noData}
+        </Message>
+      );
     }
 
     if (pdf === undefined || pdf === null) {
       return (
-        <Message type="loading">{typeof loading === 'function' ? loading() : loading}</Message>
+        <Message type="loading">
+          {typeof loading === "function" ? loading() : loading}
+        </Message>
       );
     }
 
     if (pdf === false) {
-      return <Message type="error">{typeof error === 'function' ? error() : error}</Message>;
+      return (
+        <Message type="error">
+          {typeof error === "function" ? error() : error}
+        </Message>
+      );
     }
 
     return renderChildren();
@@ -617,10 +649,11 @@ const Document = forwardRef(function Document(
 
   return (
     <div
-      className={clsx('react-pdf__Document', className)}
-      ref={inputRef}
+      className={clsx("react-pdf__Document", className)}
+      // Assertion is needed for React 18 compatibility
+      ref={inputRef as React.Ref<HTMLDivElement>}
       style={{
-        ['--scale-factor' as string]: '1',
+        ["--scale-factor" as string]: "1",
       }}
       {...eventProps}
     >

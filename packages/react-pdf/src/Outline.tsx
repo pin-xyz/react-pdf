@@ -1,26 +1,25 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo } from 'react';
-import makeCancellable from 'make-cancellable-promise';
-import makeEventProps from 'make-event-props';
-import clsx from 'clsx';
-import invariant from 'tiny-invariant';
-import warning from 'warning';
+import { useEffect, useMemo } from "react";
+import makeCancellable from "make-cancellable-promise";
+import makeEventProps from "make-event-props";
+import clsx from "clsx";
+import invariant from "tiny-invariant";
 
-import OutlineContext from './OutlineContext.js';
+import OutlineContext from "./OutlineContext.js";
 
-import OutlineItem from './OutlineItem.js';
+import OutlineItem from "./OutlineItem.js";
 
-import { cancelRunningTask } from './shared/utils.js';
+import { cancelRunningTask, warning } from "./shared/utils.js";
 
-import useDocumentContext from './shared/hooks/useDocumentContext.js';
-import useResolver from './shared/hooks/useResolver.js';
+import useDocumentContext from "./shared/hooks/useDocumentContext.js";
+import useResolver from "./shared/hooks/useResolver.js";
 
-import type { PDFDocumentProxy } from 'pdfjs-dist';
-import type { EventProps } from 'make-event-props';
-import type { ClassName, OnItemClickArgs } from './shared/types.js';
+import type { PDFDocumentProxy } from "pdfjs-dist";
+import type { EventProps } from "make-event-props";
+import type { ClassName, OnItemClickArgs } from "./shared/types.js";
 
-type PDFOutline = Awaited<ReturnType<PDFDocumentProxy['getOutline']>>;
+type PDFOutline = Awaited<ReturnType<PDFDocumentProxy["getOutline"]>>;
 
 export type OutlineProps = {
   /**
@@ -64,7 +63,9 @@ export type OutlineProps = {
  *
  * Should be placed inside `<Document />`. Alternatively, it can have `pdf` prop passed, which can be obtained from `<Document />`'s `onLoadSuccess` callback function.
  */
-export default function Outline(props: OutlineProps) {
+export default function Outline(
+  props: OutlineProps
+): React.ReactElement | null {
   const documentContext = useDocumentContext();
 
   const mergedProps = { ...documentContext, ...props };
@@ -80,7 +81,7 @@ export default function Outline(props: OutlineProps) {
 
   invariant(
     pdf,
-    'Attempted to load an outline, but no document was specified. Wrap <Outline /> in a <Document /> or pass explicit `pdf` prop.',
+    "Attempted to load an outline, but no document was specified. Wrap <Outline /> in a <Document /> or pass explicit `pdf` prop."
   );
 
   const [outlineState, outlineDispatch] = useResolver<PDFOutline | null>();
@@ -90,7 +91,7 @@ export default function Outline(props: OutlineProps) {
    * Called when an outline is read successfully
    */
   function onLoadSuccess() {
-    if (typeof outline === 'undefined' || outline === false) {
+    if (typeof outline === "undefined" || outline === false) {
       return;
     }
 
@@ -115,62 +116,62 @@ export default function Outline(props: OutlineProps) {
     }
   }
 
-  function resetOutline() {
-    outlineDispatch({ type: 'RESET' });
-  }
+  // biome-ignore lint/correctness/useExhaustiveDependencies: useEffect intentionally triggered on pdf change
+  useEffect(
+    function resetOutline() {
+      outlineDispatch({ type: "RESET" });
+    },
+    [outlineDispatch, pdf]
+  );
 
-  useEffect(resetOutline, [outlineDispatch, pdf]);
+  useEffect(
+    function loadOutline() {
+      if (!pdf) {
+        // Impossible, but TypeScript doesn't know that
+        return;
+      }
 
-  function loadOutline() {
-    if (!pdf) {
-      // Impossible, but TypeScript doesn't know that
+      const cancellable = makeCancellable(pdf.getOutline());
+      const runningTask = cancellable;
+
+      cancellable.promise
+        .then((nextOutline) => {
+          outlineDispatch({ type: "RESOLVE", value: nextOutline });
+        })
+        .catch((error) => {
+          outlineDispatch({ type: "REJECT", error });
+        });
+
+      return () => cancelRunningTask(runningTask);
+    },
+    [outlineDispatch, pdf]
+  );
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Ommitted callbacks so they are not called every time they change
+  useEffect(() => {
+    if (outline === undefined) {
       return;
     }
 
-    const cancellable = makeCancellable(pdf.getOutline());
-    const runningTask = cancellable;
+    if (outline === false) {
+      onLoadError();
+      return;
+    }
 
-    cancellable.promise
-      .then((nextOutline) => {
-        outlineDispatch({ type: 'RESOLVE', value: nextOutline });
-      })
-      .catch((error) => {
-        outlineDispatch({ type: 'REJECT', error });
-      });
-
-    return () => cancelRunningTask(runningTask);
-  }
-
-  useEffect(loadOutline, [outlineDispatch, pdf]);
-
-  useEffect(
-    () => {
-      if (outline === undefined) {
-        return;
-      }
-
-      if (outline === false) {
-        onLoadError();
-        return;
-      }
-
-      onLoadSuccess();
-    },
-    // Ommitted callbacks so they are not called every time they change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [outline],
-  );
+    onLoadSuccess();
+  }, [outline]);
 
   const childContext = useMemo(
     () => ({
       onItemClick,
     }),
-    [onItemClick],
+    [onItemClick]
   );
 
   const eventProps = useMemo(
     () => makeEventProps(otherProps, () => outline),
-    [otherProps, outline],
+    // biome-ignore lint/correctness/useExhaustiveDependencies: FIXME
+    [otherProps, outline]
   );
 
   if (!outline) {
@@ -186,7 +187,7 @@ export default function Outline(props: OutlineProps) {
       <ul>
         {outline.map((item, itemIndex) => (
           <OutlineItem
-            key={typeof item.dest === 'string' ? item.dest : itemIndex}
+            key={typeof item.dest === "string" ? item.dest : itemIndex}
             item={item}
             pdf={pdf}
           />
@@ -196,8 +197,14 @@ export default function Outline(props: OutlineProps) {
   }
 
   return (
-    <div className={clsx('react-pdf__Outline', className)} ref={inputRef} {...eventProps}>
-      <OutlineContext.Provider value={childContext}>{renderOutline()}</OutlineContext.Provider>
+    <div
+      className={clsx("react-pdf__Outline", className)}
+      ref={inputRef}
+      {...eventProps}
+    >
+      <OutlineContext.Provider value={childContext}>
+        {renderOutline()}
+      </OutlineContext.Provider>
     </div>
   );
 }
