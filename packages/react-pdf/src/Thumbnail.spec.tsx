@@ -358,8 +358,8 @@ describe('Thumbnail', () => {
       const viewport = page.getViewport({ scale: 1 });
 
       // Expect the canvas layer not to be rotated
-      expect(parseInt(width, 10)).toBe(Math.floor(viewport.width));
-      expect(parseInt(height, 10)).toBe(Math.floor(viewport.height));
+      expect(Number.parseInt(width, 10)).toBe(Math.floor(viewport.width));
+      expect(Number.parseInt(height, 10)).toBe(Math.floor(viewport.height));
     });
 
     it('requests page to be rendered with given rotation when given rotate prop', async () => {
@@ -383,8 +383,8 @@ describe('Thumbnail', () => {
       const viewport = page.getViewport({ scale: 1, rotation: rotate });
 
       // Expect the canvas layer to be rotated
-      expect(parseInt(width, 10)).toBe(Math.floor(viewport.width));
-      expect(parseInt(height, 10)).toBe(Math.floor(viewport.height));
+      expect(Number.parseInt(width, 10)).toBe(Math.floor(viewport.width));
+      expect(Number.parseInt(height, 10)).toBe(Math.floor(viewport.height));
     });
 
     it('requests page to be rendered in canvas mode by default', async () => {
@@ -412,15 +412,13 @@ describe('Thumbnail', () => {
         { pdf },
       );
 
-      expect.assertions(2);
+      expect.assertions(1);
 
       await onLoadSuccessPromise;
 
       const pageCanvas = container.querySelector('.react-pdf__Thumbnail__page__canvas');
-      const pageSVG = container.querySelector('.react-pdf__Thumbnail__page__svg');
 
       expect(pageCanvas).not.toBeInTheDocument();
-      expect(pageSVG).not.toBeInTheDocument();
     });
 
     it('requests page to be rendered in canvas mode when given renderMode = "canvas"', async () => {
@@ -464,23 +462,6 @@ describe('Thumbnail', () => {
       const customRenderer = container.querySelector('.custom-renderer');
 
       expect(customRenderer).toBeInTheDocument();
-    });
-
-    it('requests page to be rendered in SVG mode when given renderMode = "svg"', async () => {
-      const { func: onLoadSuccess, promise: onLoadSuccessPromise } = makeAsyncCallback();
-
-      const { container } = renderWithContext(
-        <Thumbnail onLoadSuccess={onLoadSuccess} pageIndex={0} renderMode="svg" />,
-        { pdf },
-      );
-
-      expect.assertions(1);
-
-      await onLoadSuccessPromise;
-
-      const pageSVG = container.querySelector('.react-pdf__Thumbnail__page__svg');
-
-      expect(pageSVG).toBeInTheDocument();
     });
   });
 

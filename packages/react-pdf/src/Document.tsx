@@ -7,7 +7,7 @@ import clsx from 'clsx';
 import invariant from 'tiny-invariant';
 import warning from 'warning';
 import { dequal } from 'dequal';
-import pdfjs from './pdfjs.js';
+import * as pdfjs from 'pdfjs-dist';
 
 import DocumentContext from './DocumentContext.js';
 
@@ -30,6 +30,7 @@ import {
 import useResolver from './shared/hooks/useResolver.js';
 
 import type { PDFDocumentProxy } from 'pdfjs-dist';
+import type { DocumentInitParameters } from 'pdfjs-dist/types/src/display/api.js';
 import type { EventProps } from 'make-event-props';
 import type {
   ClassName,
@@ -116,7 +117,7 @@ export type DocumentProps = {
    * @example this.ref
    * @example ref
    */
-  inputRef?: React.Ref<HTMLDivElement>;
+  inputRef?: React.Ref<HTMLDivElement | null>;
   /**
    * What the component should display while loading.
    *
@@ -185,15 +186,13 @@ export type DocumentProps = {
    *
    * For a full list of possible parameters, check [PDF.js documentation on DocumentInitParameters](https://mozilla.github.io/pdf.js/api/draft/module-pdfjsLib.html#~DocumentInitParameters).
    *
-   * **Note**: Make sure to define options object outside of your React component, and use `useMemo` if you can't.
+   * **Note**: Make sure to define options object outside of your React component or use `useMemo` if you can't.
    *
    * @example { cMapUrl: '/cmaps/' }
    */
   options?: Options;
   /**
-   * Rendering mode of the document. Can be `"canvas"`, `"custom"`, `"none"` or `"svg"`. If set to `"custom"`, `customRenderer` must also be provided.
-   *
-   * **Warning**: SVG render mode is deprecated and will be removed in the future.
+   * Rendering mode of the document. Can be `"canvas"`, `"custom"` or `"none"``. If set to `"custom"`, `customRenderer` must also be provided.
    *
    * @default 'canvas'
    * @example 'custom'
@@ -210,13 +209,11 @@ export type DocumentProps = {
 const defaultOnPassword: OnPassword = (callback, reason) => {
   switch (reason) {
     case PasswordResponses.NEED_PASSWORD: {
-      // eslint-disable-next-line no-alert
       const password = prompt('Enter the password to open this PDF file.');
       callback(password);
       break;
     }
     case PasswordResponses.INCORRECT_PASSWORD: {
-      // eslint-disable-next-line no-alert
       const password = prompt('Invalid password. Please try again.');
       callback(password);
       break;
@@ -236,7 +233,14 @@ function isParameterObject(file: File): file is Source {
 /**
  * Loads a document passed using `file` prop.
  */
-const Document = forwardRef(function Document(
+const Document: React.ForwardRefExoticComponent<
+  DocumentProps &
+    React.RefAttributes<{
+      linkService: React.RefObject<LinkService>;
+      pages: React.RefObject<HTMLDivElement[]>;
+      viewer: React.RefObject<{ scrollPageIntoView: (args: ScrollPageIntoViewArgs) => void }>;
+    }>
+> = forwardRef(function Document(
   {
     children,
     className,
@@ -259,7 +263,7 @@ const Document = forwardRef(function Document(
     renderMode,
     rotate,
     ...otherProps
-  }: DocumentProps,
+  },
   ref,
 ) {
   const [sourceState, sourceDispatch] = useResolver<Source | null>();
@@ -359,6 +363,7 @@ const Document = forwardRef(function Document(
     sourceDispatch({ type: 'RESET' });
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: See https://github.com/biomejs/biome/issues/3080
   useEffect(resetSource, [file, sourceDispatch]);
 
   const findDocumentSource = useCallback(async (): Promise<Source | null> => {
@@ -441,23 +446,19 @@ const Document = forwardRef(function Document(
     };
   }, [findDocumentSource, sourceDispatch]);
 
-  useEffect(
-    () => {
-      if (typeof source === 'undefined') {
-        return;
-      }
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Ommitted callbacks so they are not called every time they change
+  useEffect(() => {
+    if (typeof source === 'undefined') {
+      return;
+    }
 
-      if (source === false) {
-        onSourceError();
-        return;
-      }
+    if (source === false) {
+      onSourceError();
+      return;
+    }
 
-      onSourceSuccess();
-    },
-    // Ommitted callbacks so they are not called every time they change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [source],
-  );
+    onSourceSuccess();
+  }, [source]);
 
   /**
    * Called when a document is read successfully
@@ -492,90 +493,83 @@ const Document = forwardRef(function Document(
     }
   }
 
-  function resetDocument() {
-    pdfDispatch({ type: 'RESET' });
-  }
-
-  useEffect(resetDocument, [pdfDispatch, source]);
-
-  function loadDocument() {
-    if (!source) {
-      return;
-    }
-
-    const documentInitParams = options
-      ? {
-          ...source,
-          ...options,
-        }
-      : source;
-
-    const destroyable = pdfjs.getDocument(documentInitParams);
-    if (onLoadProgress) {
-      destroyable.onProgress = onLoadProgress;
-    }
-    if (onPassword) {
-      destroyable.onPassword = onPassword;
-    }
-    const loadingTask = destroyable;
-
-    loadingTask.promise
-      .then((nextPdf) => {
-        pdfDispatch({ type: 'RESOLVE', value: nextPdf });
-      })
-      .catch((error) => {
-        if (loadingTask.destroyed) {
-          return;
-        }
-
-        pdfDispatch({ type: 'REJECT', error });
-      });
-
-    return () => {
-      loadingTask.destroy();
-    };
-  }
-
+  // biome-ignore lint/correctness/useExhaustiveDependencies: useEffect intentionally triggered on source change
   useEffect(
-    loadDocument,
-    // Ommitted callbacks so they are not called every time they change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    function resetDocument() {
+      pdfDispatch({ type: 'RESET' });
+    },
+    [pdfDispatch, source],
+  );
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Ommitted callbacks so they are not called every time they change
+  useEffect(
+    function loadDocument() {
+      if (!source) {
+        return;
+      }
+
+      const documentInitParams: DocumentInitParameters = options
+        ? { ...source, ...options }
+        : source;
+
+      const destroyable = pdfjs.getDocument(documentInitParams);
+      if (onLoadProgress) {
+        destroyable.onProgress = onLoadProgress;
+      }
+      if (onPassword) {
+        destroyable.onPassword = onPassword;
+      }
+      const loadingTask = destroyable;
+
+      const loadingPromise = loadingTask.promise
+        .then((nextPdf) => {
+          pdfDispatch({ type: 'RESOLVE', value: nextPdf });
+        })
+        .catch((error) => {
+          if (loadingTask.destroyed) {
+            return;
+          }
+
+          pdfDispatch({ type: 'REJECT', error });
+        });
+
+      return () => {
+        loadingPromise.finally(() => loadingTask.destroy());
+      };
+    },
     [options, pdfDispatch, source],
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Ommitted callbacks so they are not called every time they change
+  useEffect(() => {
+    if (typeof pdf === 'undefined') {
+      return;
+    }
+
+    if (pdf === false) {
+      onLoadError();
+      return;
+    }
+
+    onLoadSuccess();
+  }, [pdf]);
+
   useEffect(
-    () => {
-      if (typeof pdf === 'undefined') {
-        return;
-      }
-
-      if (pdf === false) {
-        onLoadError();
-        return;
-      }
-
-      onLoadSuccess();
+    function setupLinkService() {
+      linkService.current.setViewer(viewer.current);
+      linkService.current.setExternalLinkRel(externalLinkRel);
+      linkService.current.setExternalLinkTarget(externalLinkTarget);
     },
-    // Ommitted callbacks so they are not called every time they change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pdf],
+    [externalLinkRel, externalLinkTarget],
   );
 
-  function setupLinkService() {
-    linkService.current.setViewer(viewer.current);
-    linkService.current.setExternalLinkRel(externalLinkRel);
-    linkService.current.setExternalLinkTarget(externalLinkTarget);
-  }
-
-  useEffect(setupLinkService, [externalLinkRel, externalLinkTarget]);
-
-  function registerPage(pageIndex: number, ref: HTMLDivElement) {
+  const registerPage = useCallback((pageIndex: number, ref: HTMLDivElement) => {
     pages.current[pageIndex] = ref;
-  }
+  }, []);
 
-  function unregisterPage(pageIndex: number) {
+  const unregisterPage = useCallback((pageIndex: number) => {
     delete pages.current[pageIndex];
-  }
+  }, []);
 
   const childContext = useMemo(
     () => ({
@@ -588,10 +582,14 @@ const Document = forwardRef(function Document(
       rotate,
       unregisterPage,
     }),
-    [imageResourcesPath, onItemClick, pdf, renderMode, rotate],
+    [imageResourcesPath, onItemClick, pdf, registerPage, renderMode, rotate, unregisterPage],
   );
 
-  const eventProps = useMemo(() => makeEventProps(otherProps, () => pdf), [otherProps, pdf]);
+  const eventProps = useMemo(
+    () => makeEventProps(otherProps, () => pdf),
+    // biome-ignore lint/correctness/useExhaustiveDependencies: FIXME
+    [otherProps, pdf],
+  );
 
   function renderChildren() {
     return <DocumentContext.Provider value={childContext}>{children}</DocumentContext.Provider>;
@@ -618,7 +616,8 @@ const Document = forwardRef(function Document(
   return (
     <div
       className={clsx('react-pdf__Document', className)}
-      ref={inputRef}
+      // Assertion is needed for React 18 compatibility
+      ref={inputRef as React.Ref<HTMLDivElement>}
       style={{
         ['--scale-factor' as string]: '1',
       }}

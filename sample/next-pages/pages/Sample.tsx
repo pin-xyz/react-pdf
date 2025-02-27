@@ -4,12 +4,10 @@ import { pdfjs, Document, Page } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 
-import './Sample.css';
-
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.js',
+  'pdfjs-dist/build/pdf.worker.min.mjs',
   import.meta.url,
 ).toString();
 
@@ -43,8 +41,10 @@ export default function Sample() {
   function onFileChange(event: React.ChangeEvent<HTMLInputElement>): void {
     const { files } = event.target;
 
-    if (files && files[0]) {
-      setFile(files[0] || null);
+    const nextFile = files?.[0];
+
+    if (nextFile) {
+      setFile(nextFile);
     }
   }
 
@@ -64,7 +64,7 @@ export default function Sample() {
         </div>
         <div className="Example__container__document" ref={setContainerRef}>
           <Document file={file} onLoadSuccess={onDocumentLoadSuccess} options={options}>
-            {Array.from(new Array(numPages), (el, index) => (
+            {Array.from(new Array(numPages), (_el, index) => (
               <Page
                 key={`page_${index + 1}`}
                 pageNumber={index + 1}

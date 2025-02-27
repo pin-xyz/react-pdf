@@ -5,7 +5,7 @@ import type {
   PasswordResponses,
 } from 'pdfjs-dist';
 import type {
-  BinaryData,
+  TypedArray,
   DocumentInitParameters,
   RefProxy,
   StructTreeNode,
@@ -49,13 +49,15 @@ export type OnLoadProgressArgs = {
 
 export type RegisterPage = (pageIndex: number, ref: HTMLDivElement) => void;
 
-export type RenderMode = 'canvas' | 'custom' | 'none' | 'svg';
+export type RenderMode = 'canvas' | 'custom' | 'none';
 
 export type ScrollPageIntoViewArgs = {
   dest?: ResolvedDest;
   pageIndex?: number;
   pageNumber: number;
 };
+
+type BinaryData = TypedArray | ArrayBuffer | number[] | string;
 
 export type Source =
   | { data: BinaryData | undefined }

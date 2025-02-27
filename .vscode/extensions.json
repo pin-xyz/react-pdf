@@ -1,4 +1,4 @@
 {
-  "recommendations": ["dbaeumer.vscode-eslint", "eamodio.gitlens", "esbenp.prettier-vscode"],
-  "unwantedRecommendations": ["dbaeumer.jshint"]
+  "recommendations": ["biomejs.biome"],
+  "unwantedRecommendations": ["dbaeumer.jshint", "dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
 }

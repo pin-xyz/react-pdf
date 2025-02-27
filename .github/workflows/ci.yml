@@ -18,36 +18,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cache Yarn cache
-        uses: actions/cache@v4
-        env:
-          cache-name: yarn-cache
-        with:
-          path: ~/.yarn/berry/cache
-          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ env.cache-name }}
-
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Install dependencies
-        run: yarn --immutable
-
-      - name: Build package
-        run: yarn build
+      - name: Setup Biome
+        uses: biomejs/setup-biome@v2
 
       - name: Run tests
-        run: yarn lint
+        run: biome lint
 
   typescript:
-    name: Type checking
+    name: Type checking (React ${{ matrix.react }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        react: [18, 19]
 
     steps:
       - name: Checkout
@@ -66,7 +48,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Enable Corepack
         run: corepack enable
@@ -74,10 +56,18 @@ jobs:
       - name: Install dependencies
         run: yarn --immutable
 
+      - name: Override React version
+        if: ${{ matrix.react == 19 }}
+        run: |
+          npm pkg set resolutions.'@types/react'='npm:types-react@beta'
+          npm pkg set resolutions.'@types/react-dom'='npm:types-react-dom@beta'
+          yarn config set enableImmutableInstalls false
+          yarn up react@rc react-dom@rc
+
       - name: Build package
         run: yarn build
 
-      - name: Run type checking
+      - name: Run type checking (React ${{ matrix.react }})
         run: yarn tsc
 
   format:
@@ -88,33 +78,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cache Yarn cache
-        uses: actions/cache@v4
-        env:
-          cache-name: yarn-cache
-        with:
-          path: ~/.yarn/berry/cache
-          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ env.cache-name }}
-
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Install dependencies
-        run: yarn --immutable
+      - name: Setup Biome
+        uses: biomejs/setup-biome@v2
 
       - name: Run formatting
-        run: yarn format
+        run: biome format
 
   unit:
-    name: Unit tests
+    name: Unit tests (React ${{ matrix.react }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        react: [18, 19]
 
     steps:
       - name: Checkout
@@ -133,7 +108,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Enable Corepack
         run: corepack enable
@@ -141,5 +116,13 @@ jobs:
       - name: Install dependencies
         run: yarn --immutable
 
-      - name: Run tests
+      - name: Override React version
+        if: ${{ matrix.react == 19 }}
+        run: |
+          npm pkg set resolutions.'@types/react'='npm:types-react@beta'
+          npm pkg set resolutions.'@types/react-dom'='npm:types-react-dom@beta'
+          yarn config set enableImmutableInstalls false
+          yarn up react@beta react-dom@beta
+
+      - name: Run tests (React ${{ matrix.react }})
         run: yarn unit

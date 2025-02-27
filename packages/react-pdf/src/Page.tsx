@@ -11,8 +11,7 @@ import warning from 'warning';
 import PageContext from './PageContext.js';
 
 import Message from './Message.js';
-import PageCanvas from './Page/PageCanvas.js';
-import PageSVG from './Page/PageSVG.js';
+import Canvas from './Page/Canvas.js';
 import TextLayer from './Page/TextLayer.js';
 import AnnotationLayer from './Page/AnnotationLayer.js';
 
@@ -52,13 +51,13 @@ export type PageProps = {
   _className?: string;
   _enableRegisterUnregisterPage?: boolean;
   /**
-   * Canvas background color. Any valid `canvas.fillStyle` can be used. If you set `renderMode` to `"svg"` this prop will be ignored.
+   * Canvas background color. Any valid `canvas.fillStyle` can be used.
    *
    * @example 'transparent'
    */
   canvasBackground?: string;
   /**
-   * A prop that behaves like [ref](https://reactjs.org/docs/refs-and-the-dom.html), but it's passed to `<canvas>` rendered by `<PageCanvas>` component. If you set `renderMode` to `"svg"` this prop will be ignored.
+   * A prop that behaves like [ref](https://reactjs.org/docs/refs-and-the-dom.html), but it's passed to `<canvas>` rendered by `<PageCanvas>` component.
    *
    * @example (ref) => { this.myCanvas = ref; }
    * @example this.ref
@@ -121,7 +120,7 @@ export type PageProps = {
    * @example this.ref
    * @example ref
    */
-  inputRef?: React.Ref<HTMLDivElement>;
+  inputRef?: React.Ref<HTMLDivElement | null>;
   /**
    * What the component should display while loading.
    *
@@ -260,9 +259,7 @@ export type PageProps = {
    */
   renderForms?: boolean;
   /**
-   * Rendering mode of the document. Can be `"canvas"`, `"custom"`, `"none"` or `"svg"`. If set to `"custom"`, `customRenderer` must also be provided.
-   *
-   * **Warning**: SVG render mode is deprecated and will be removed in the future.
+   * Rendering mode of the document. Can be `"canvas"`, `"custom"` or `"none"`. If set to `"custom"`, `customRenderer` must also be provided.
    *
    * @default 'canvas'
    * @example 'custom'
@@ -303,7 +300,7 @@ export type PageProps = {
  *
  * Should be placed inside `<Document />`. Alternatively, it can have `pdf` prop passed, which can be obtained from `<Document />`'s `onLoadSuccess` callback function, however some advanced functions like linking between pages inside a document may not be working correctly.
  */
-export default function Page(props: PageProps) {
+export default function Page(props: PageProps): React.ReactElement {
   const documentContext = useDocumentContext();
 
   const mergedProps = { ...documentContext, ...props };
@@ -360,7 +357,7 @@ export default function Page(props: PageProps) {
     'Attempted to load a page, but no document was specified. Wrap <Page /> in a <Document /> or pass explicit `pdf` prop.',
   );
 
-  const pageIndex = isProvided(pageNumberProps) ? pageNumberProps - 1 : pageIndexProps ?? null;
+  const pageIndex = isProvided(pageNumberProps) ? pageNumberProps - 1 : (pageIndexProps ?? null);
 
   const pageNumber = pageNumberProps ?? (isProvided(pageIndexProps) ? pageIndexProps + 1 : null);
 
@@ -390,20 +387,22 @@ export default function Page(props: PageProps) {
     return scaleWithDefault * pageScale;
   }, [height, page, rotate, scaleProps, width]);
 
-  function hook() {
-    return () => {
-      if (!isProvided(pageIndex)) {
-        // Impossible, but TypeScript doesn't know that
-        return;
-      }
+  // biome-ignore lint/correctness/useExhaustiveDependencies: useEffect intentionally triggered on pdf change
+  useEffect(
+    function hook() {
+      return () => {
+        if (!isProvided(pageIndex)) {
+          // Impossible, but TypeScript doesn't know that
+          return;
+        }
 
-      if (_enableRegisterUnregisterPage && unregisterPage) {
-        unregisterPage(pageIndex);
-      }
-    };
-  }
-
-  useEffect(hook, [_enableRegisterUnregisterPage, pdf, pageIndex, unregisterPage]);
+        if (_enableRegisterUnregisterPage && unregisterPage) {
+          unregisterPage(pageIndex);
+        }
+      };
+    },
+    [_enableRegisterUnregisterPage, pdf, pageIndex, unregisterPage],
+  );
 
   /**
    * Called when a page is loaded successfully
@@ -444,50 +443,49 @@ export default function Page(props: PageProps) {
     }
   }
 
-  function resetPage() {
-    pageDispatch({ type: 'RESET' });
-  }
+  // biome-ignore lint/correctness/useExhaustiveDependencies: useEffect intentionally triggered on pdf and pageIndex change
+  useEffect(
+    function resetPage() {
+      pageDispatch({ type: 'RESET' });
+    },
+    [pageDispatch, pdf, pageIndex],
+  );
 
-  useEffect(resetPage, [pageDispatch, pdf, pageIndex]);
+  useEffect(
+    function loadPage() {
+      if (!pdf || !pageNumber) {
+        return;
+      }
 
-  function loadPage() {
-    if (!pdf || !pageNumber) {
+      const cancellable = makeCancellable(pdf.getPage(pageNumber));
+      const runningTask = cancellable;
+
+      cancellable.promise
+        .then((nextPage) => {
+          pageDispatch({ type: 'RESOLVE', value: nextPage });
+        })
+        .catch((error) => {
+          pageDispatch({ type: 'REJECT', error });
+        });
+
+      return () => cancelRunningTask(runningTask);
+    },
+    [pageDispatch, pdf, pageNumber],
+  );
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Ommitted callbacks so they are not called every time they change
+  useEffect(() => {
+    if (page === undefined) {
       return;
     }
 
-    const cancellable = makeCancellable(pdf.getPage(pageNumber));
-    const runningTask = cancellable;
+    if (page === false) {
+      onLoadError();
+      return;
+    }
 
-    cancellable.promise
-      .then((nextPage) => {
-        pageDispatch({ type: 'RESOLVE', value: nextPage });
-      })
-      .catch((error) => {
-        pageDispatch({ type: 'REJECT', error });
-      });
-
-    return () => cancelRunningTask(runningTask);
-  }
-
-  useEffect(loadPage, [pageDispatch, pdf, pageIndex, pageNumber, registerPage]);
-
-  useEffect(
-    () => {
-      if (page === undefined) {
-        return;
-      }
-
-      if (page === false) {
-        onLoadError();
-        return;
-      }
-
-      onLoadSuccess();
-    },
-    // Ommitted callbacks so they are not called every time they change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [page, scale],
-  );
+    onLoadSuccess();
+  }, [page, scale]);
 
   const childContext = useMemo(
     () =>
@@ -551,12 +549,11 @@ export default function Page(props: PageProps) {
       makeEventProps(otherProps, () =>
         page ? (scale ? makePageCallback(page, scale) : undefined) : page,
       ),
+    // biome-ignore lint/correctness/useExhaustiveDependencies: FIXME
     [otherProps, page, scale],
   );
 
   const pageKey = `${pageIndex}@${scale}/${rotate}`;
-
-  const pageKeyNoScale = `${pageIndex}/${rotate}`;
 
   function renderMainLayer() {
     switch (renderMode) {
@@ -570,11 +567,9 @@ export default function Page(props: PageProps) {
       }
       case 'none':
         return null;
-      case 'svg':
-        return <PageSVG key={`${pageKeyNoScale}_svg`} />;
       case 'canvas':
       default:
-        return <PageCanvas key={`${pageKey}_canvas`} canvasRef={canvasRef} />;
+        return <Canvas key={`${pageKey}_canvas`} canvasRef={canvasRef} />;
     }
   }
 
@@ -591,10 +586,6 @@ export default function Page(props: PageProps) {
       return null;
     }
 
-    /**
-     * As of now, PDF.js 2.0.943 returns warnings on unimplemented annotations in SVG mode.
-     * Therefore, as a fallback, we render "traditional" AnnotationLayer component.
-     */
     return <AnnotationLayer key={`${pageKey}_annotations`} />;
   }
 
@@ -631,7 +622,8 @@ export default function Page(props: PageProps) {
     <div
       className={clsx(_className, className)}
       data-page-number={pageNumber}
-      ref={mergeRefs(inputRef, pageElement)}
+      // Assertion is needed for React 18 compatibility
+      ref={mergeRefs(inputRef as React.Ref<HTMLDivElement>, pageElement)}
       style={{
         ['--scale-factor' as string]: `${scale}`,
         backgroundColor: canvasBackground || 'white',
